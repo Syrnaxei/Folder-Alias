@@ -1,0 +1,32 @@
+# CMake 构建目录
+cmake-build-debug/
+cmake-build-release/
+
+# 编译生成的可执行文件和库
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+
+# CMake 中间文件
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# IDE 配置（如 VSCode）
+.vscode/
+
+# Windows 系统文件
+Thumbs.db
+.DS_Store
+
+# 其他临时文件
+*.o
+*.obj
+*.pdb
+*.ilk
+*.manifest
+*.res
+*.tmp
+*.bak
