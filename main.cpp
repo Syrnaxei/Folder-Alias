@@ -7,7 +7,7 @@
 
 #pragma comment(lib, "Shell32.lib")
 
-#define FA_VERSION "0.0.2"
+#define FA_VERSION "0.0.3-Beta"
 
 std::string getExeDir() {
     char path[MAX_PATH];
@@ -24,7 +24,7 @@ void loadMappings(const std::string& filename,std::unordered_map<std::string,std
         if (createFile.is_open()) {
             createFile.close();
         }else {
-            std::cout << "file read error" << filename << std::endl;
+            std::cout << "ERROR : Cannot read " << filename << std::endl;
         }
     }
 
@@ -111,7 +111,7 @@ Command parseCommand(const std::string& cmd) {
 
 int main(int argc,char* argv[]) {
     if (argc < 2) {
-        std::cout << "Enter 'fa help' to get commands used." <<std::endl;
+        std::cout << "Type 'fa help' for a list of available commands." <<std::endl;
         return 1;
     }
 
@@ -143,12 +143,12 @@ int main(int argc,char* argv[]) {
                         SW_SHOWNORMAL
                         );
                     if ((INT_PTR)hRet <= 32) {
-                        std::cerr << "ShellExecuteA failed " << (int)(INT_PTR)hRet << std::endl;
+                        std::cerr << "ERROR : Failed to open folder " << (int)(INT_PTR)hRet << std::endl;
                     }else {
                         std::cout << "success" << std::endl;
                     }
                 }else {
-                    std::cout << "Cannot find object" << std::endl;
+                    std::cout << "Warning : Cannot find alias" << std::endl;
                 }
                 break;
             }
@@ -162,7 +162,7 @@ int main(int argc,char* argv[]) {
             saveMappings(dbFile,mappings);
             std::cout << "success" <<std::endl;
         }else {
-            std::cout << "Command not found" << std::endl;
+            std::cout << "Warning : Command not found" << std::endl;
         }
     }
 
@@ -173,7 +173,7 @@ int main(int argc,char* argv[]) {
             saveMappings(dbFile,mappings);
             std::cout << "success" <<std::endl;
         }else {
-            std::cout << "Command not found" << std::endl;
+            std::cout << "Warning : Command not found" << std::endl;
         }
     }
 
