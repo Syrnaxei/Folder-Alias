@@ -46,6 +46,40 @@ void saveMappings(const std::string& filename,std::unordered_map<std::string,std
     file.close();
 }
 
+//这个函数可以整个多态实现精准查找
+void getHelp() {
+    std::cout << "Folder-Alias" << "\n"
+              << "\n"
+              << "USAGE:\n"
+              << "    fa <command> [arguments]\n"
+              << "\n"
+              << "COMMANDS:\n"
+              << "    version                    Show version information\n"
+              << "    ls                         List all alias mappings\n"
+              << "    help                       Show this help message\n"
+              << "    <alias>                    Open folder by alias name\n"
+              << "\n"
+              << "ARGUMENTS:\n"
+              << "    fa rm <alias>              Remove an alias mapping\n"
+              << "    fa add <alias> <path>      Add or update an alias mapping\n"
+              << "\n"
+              << "EXAMPLES:\n"
+              << "    fa version                 Display current version\n"
+              << "    fa ls                      Show all configured aliases\n"
+              << "    fa projects                Open folder mapped to 'projects'\n"
+              << "    fa add docs D:\\Documents   Create alias 'docs' for D:\\Documents\n"
+              << "    fa rm docs                 Remove the 'docs' alias\n"
+              << "\n"
+              << "CONFIGURATION:\n"
+              << "    Alias mappings are stored in: fa_mappings.txt (same directory as executable)\n"
+              << "    Format: alias=path (one per line)\n"
+              << "\n"
+              << "NOTES:\n"
+              << "    - Paths can be absolute or relative\n"
+              << "    - Use the path copied directly in File Explorer\n";
+}
+
+
 void listMappings(const std::unordered_map<std::string,std::string>& map) {
     if (map.empty()) {
         std::cout << "No mappings found." << std::endl;
@@ -64,12 +98,14 @@ void listMappings(const std::unordered_map<std::string,std::string>& map) {
 enum class Command {
     VERSION,
     LS,
+    HELP,
     OPEN
 };
 
 Command parseCommand(const std::string& cmd) {
     if (cmd == "version") return Command::VERSION;
     if (cmd == "ls") return Command::LS;
+    if (cmd == "help") return  Command::HELP;
     return Command::OPEN;
 }
 
@@ -92,6 +128,9 @@ int main(int argc,char* argv[]) {
             case Command::LS:
                 listMappings(mappings);
                 break;
+            case Command::HELP:
+                getHelp();
+                break;
             case Command::OPEN: {
                 auto it = mappings.find(arg1);
                 if (it != mappings.end()) {
@@ -104,7 +143,7 @@ int main(int argc,char* argv[]) {
                         SW_SHOWNORMAL
                         );
                     if ((INT_PTR)hRet <= 32) {
-                        std::cerr << "ShellExecuteA failed with code: " << (int)(INT_PTR)hRet << std::endl;
+                        std::cerr << "ShellExecuteA failed " << (int)(INT_PTR)hRet << std::endl;
                     }else {
                         std::cout << "success" << std::endl;
                     }
@@ -117,17 +156,25 @@ int main(int argc,char* argv[]) {
     }
 
     if (argc == 3) {
-        std::string alias = argv[2];
-        mappings.erase(alias);
-        saveMappings(dbFile,mappings);
-        std::cout << "success" <<std::endl;
+        if (arg1 == "add") {
+            std::string alias = argv[2];
+            mappings.erase(alias);
+            saveMappings(dbFile,mappings);
+            std::cout << "success" <<std::endl;
+        }else {
+            std::cout << "Command not found" << std::endl;
+        }
     }
 
     if (argc == 4) {
-        std::string alias = argv[2];
-        mappings[alias] = argv[3];
-        saveMappings(dbFile,mappings);
-        std::cout << "success" <<std::endl;
+        if (arg1 == "rm") {
+            std::string alias = argv[2];
+            mappings[alias] = argv[3];
+            saveMappings(dbFile,mappings);
+            std::cout << "success" <<std::endl;
+        }else {
+            std::cout << "Command not found" << std::endl;
+        }
     }
 
     return 0;
