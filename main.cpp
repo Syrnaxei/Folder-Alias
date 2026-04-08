@@ -156,7 +156,7 @@ int main(int argc,char* argv[]) {
     }
 
     if (argc == 3) {
-        if (arg1 == "add") {
+        if (arg1 == "rm") {
             std::string alias = argv[2];
             mappings.erase(alias);
             saveMappings(dbFile,mappings);
@@ -167,7 +167,7 @@ int main(int argc,char* argv[]) {
     }
 
     if (argc == 4) {
-        if (arg1 == "rm") {
+        if (arg1 == "add") {
             std::string alias = argv[2];
             mappings[alias] = argv[3];
             saveMappings(dbFile,mappings);
