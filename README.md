@@ -23,6 +23,7 @@ fa <command> [arguments]
 | `version` | Show version information |
 | `ls` | List all alias mappings |
 | `help` | Show help message |
+|`update`|Open github release page |
 | `<alias>` | Open folder by alias name |
 | `add <alias> <path>` | Add or update an alias mapping |
 | `rm <alias>` | Remove an alias mapping |
@@ -36,14 +37,17 @@ fa version
 # Show all aliases
 fa ls
 
+# Open github release page
+fa update
+
 # Open folder mapped to 'projects'
-fa projects
+fa example1
 
 # Create alias 'docs' for D:\Documents
-fa add docs D:\Documents
+fa add example1 D:\example1
 
 # Remove the 'docs' alias
-fa rm docs
+fa rm example1
 ```
 
 ## Configuration
@@ -58,3 +62,9 @@ alias=path
 ## Environment Variables
 
 Configure environment variables as needed for your setup.
+
+## Compile command
+
+```bash
+g++ -o fa.exe main.cpp -lshell32 -static-libgcc -static-libstdc++
+```

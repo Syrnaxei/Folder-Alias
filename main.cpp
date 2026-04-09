@@ -57,6 +57,7 @@ void getHelp() {
               << "    version                    Show version information\n"
               << "    ls                         List all alias mappings\n"
               << "    help                       Show this help message\n"
+              << "    update                     open the github release page\n"
               << "    <alias>                    Open folder by alias name\n"
               << "\n"
               << "ARGUMENTS:\n"
@@ -79,7 +80,6 @@ void getHelp() {
               << "    - Use the path copied directly in File Explorer\n";
 }
 
-
 void listMappings(const std::unordered_map<std::string,std::string>& map) {
     if (map.empty()) {
         std::cout << "No mappings found." << std::endl;
@@ -89,16 +89,35 @@ void listMappings(const std::unordered_map<std::string,std::string>& map) {
     std::cout << "Alias mappings:" << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     for (const auto& pair : map) {
-        std::cout << pair.first << " -> " << pair.second << std::endl;
+        std::cout << pair.first << " -> " << pair.second << "\n";
     }
     std::cout << "----------------------------------------" << std::endl;
     std::cout << "Total: " << map.size() << " mapping(s)" << std::endl;
+}
+
+void openReleasePage() {
+    const char* url = "https://github.com/Syrnaxei/Folder-Alias/releases";
+    HINSTANCE hRet = ShellExecuteA(
+        nullptr,
+        "open",
+        url,
+        nullptr,
+        nullptr,
+        SW_NORMAL
+        );
+    if ((INT_PTR)hRet <= 32) {
+        std::cerr << "ERROR : Failed to open browser " << (int)(INT_PTR)hRet << std::endl;
+    }else {
+        std::cout << "Success." << std::endl;
+        std::cout << "You need to manually download the release." << std::endl;
+    }
 }
 
 enum class Command {
     VERSION,
     LS,
     HELP,
+    UPDATE,
     OPEN
 };
 
@@ -106,6 +125,7 @@ Command parseCommand(const std::string& cmd) {
     if (cmd == "version") return Command::VERSION;
     if (cmd == "ls") return Command::LS;
     if (cmd == "help") return  Command::HELP;
+    if (cmd == "update") return Command::UPDATE;
     return Command::OPEN;
 }
 
@@ -131,6 +151,9 @@ int main(int argc,char* argv[]) {
             case Command::HELP:
                 getHelp();
                 break;
+            case Command::UPDATE:
+                openReleasePage();
+                break;
             case Command::OPEN: {
                 auto it = mappings.find(arg1);
                 if (it != mappings.end()) {
@@ -145,13 +168,15 @@ int main(int argc,char* argv[]) {
                     if ((INT_PTR)hRet <= 32) {
                         std::cerr << "ERROR : Failed to open folder " << (int)(INT_PTR)hRet << std::endl;
                     }else {
-                        std::cout << "success" << std::endl;
+                        std::cout << "Success." << std::endl;
                     }
                 }else {
-                    std::cout << "Warning : Cannot find alias" << std::endl;
+                    std::cout << "Warning : Cannot find alias." << std::endl;
                 }
                 break;
             }
+            default:
+                std::cout << "Warning : Command not found." << std::endl;
         }
     }
 
@@ -160,9 +185,9 @@ int main(int argc,char* argv[]) {
             std::string alias = argv[2];
             mappings.erase(alias);
             saveMappings(dbFile,mappings);
-            std::cout << "success" <<std::endl;
+            std::cout << "Success." <<std::endl;
         }else {
-            std::cout << "Warning : Command not found" << std::endl;
+            std::cout << "Warning : Command not found." << std::endl;
         }
     }
 
@@ -171,9 +196,9 @@ int main(int argc,char* argv[]) {
             std::string alias = argv[2];
             mappings[alias] = argv[3];
             saveMappings(dbFile,mappings);
-            std::cout << "success" <<std::endl;
+            std::cout << "Success." <<std::endl;
         }else {
-            std::cout << "Warning : Command not found" << std::endl;
+            std::cout << "Warning : Command not found." << std::endl;
         }
     }
 
