@@ -4,10 +4,11 @@
 #include <unordered_map>
 #include <windows.h>
 #include <shellapi.h>
+#include <filesystem>
 
 #pragma comment(lib, "Shell32.lib")
 
-#define FA_VERSION "0.0.3-Beta"
+#define FA_VERSION "0.0.4"
 
 std::string getExeDir() {
     char path[MAX_PATH];
@@ -16,29 +17,28 @@ std::string getExeDir() {
     return spath.substr(0,spath.find_last_of('\\'));
 }
 
-void loadMappings(const std::string& filename,std::unordered_map<std::string,std::string>& map) {
+void loadMappings(const std::string& filename, std::unordered_map<std::string, std::string>& map) {
     std::ifstream file(filename);
 
     if (!file.is_open()) {
         std::ofstream createFile(filename);
-        if (createFile.is_open()) {
-            createFile.close();
-        }else {
-            std::cout << "ERROR : Cannot read " << filename << std::endl;
+        if (!createFile.is_open()) {
+            std::cerr << "ERROR : Cannot create " << filename << std::endl;
         }
+        return;
     }
 
     std::string line;
-    while (std::getline(file,line)) {
+    while (std::getline(file, line)) {
         size_t pos = line.find('=');
-        if (pos != std::string::npos) {
+        if (pos != std::string::npos && pos > 0) { // 简单防止空别名
             map[line.substr(0, pos)] = line.substr(pos + 1);
         }
     }
-    file.close();
 }
 
-void saveMappings(const std::string& filename,std::unordered_map<std::string,std::string>& map) {
+
+void saveMappings(const std::string& filename, const std::unordered_map<std::string,std::string>& map) {
     std::ofstream file(filename);
     for (const auto& pair : map) {
         file << pair.first << "=" << pair.second << '\n';
@@ -54,22 +54,22 @@ void getHelp() {
               << "    fa <command> [arguments]\n"
               << "\n"
               << "COMMANDS:\n"
-              << "    version                    Show version information\n"
-              << "    ls                         List all alias mappings\n"
-              << "    help                       Show this help message\n"
-              << "    update                     open the github release page\n"
-              << "    <alias>                    Open folder by alias name\n"
+              << "    version                        Show version information\n"
+              << "    ls                             List all alias mappings\n"
+              << "    help                           Show this help message\n"
+              << "    release                        open the github release page\n"
+              << "    <alias>                        Open folder by alias name\n"
               << "\n"
               << "ARGUMENTS:\n"
-              << "    fa rm <alias>              Remove an alias mapping\n"
-              << "    fa add <alias> <path>      Add or update an alias mapping\n"
+              << "    fa del <alias>                 Remove an alias mapping\n"
+              << "    fa add <alias> <path>          Add or update an alias mapping\n"
               << "\n"
               << "EXAMPLES:\n"
-              << "    fa version                 Display current version\n"
-              << "    fa ls                      Show all configured aliases\n"
-              << "    fa projects                Open folder mapped to 'projects'\n"
-              << "    fa add docs D:\\Documents   Create alias 'docs' for D:\\Documents\n"
-              << "    fa rm docs                 Remove the 'docs' alias\n"
+              << "    fa version                     Display current version\n"
+              << "    fa ls                          Show all configured aliases\n"
+              << "    fa example1                    Open folder mapped to 'example1'\n"
+              << "    fa del example1                Remove the 'example1' alias\n"
+              << "    fa add example1 D:\\example1   Create alias 'example1' for D:\\example1\n"
               << "\n"
               << "CONFIGURATION:\n"
               << "    Alias mappings are stored in: fa_mappings.txt (same directory as executable)\n"
@@ -95,6 +95,27 @@ void listMappings(const std::unordered_map<std::string,std::string>& map) {
     std::cout << "Total: " << map.size() << " mapping(s)" << std::endl;
 }
 
+void openFolder(std::unordered_map<std::string , std::string>& mappings, const std::string& arg1) {
+    auto it = mappings.find(arg1);
+    if (it != mappings.end()) {
+        HINSTANCE hRet = ShellExecuteA(
+            nullptr,
+            "explore",
+            it->second.c_str(),
+            nullptr,
+            nullptr,
+            SW_SHOWNORMAL
+            );
+        if ((INT_PTR)hRet <= 32) {
+            std::cerr << "ERROR : Failed to open folder " << (int)(INT_PTR)hRet << std::endl;
+        }else {
+            std::cout << "Success." << std::endl;
+        }
+    }else {
+        std::cout << "Warning : Cannot find alias." << std::endl;
+    }
+}
+
 void openReleasePage() {
     const char* url = "https://github.com/Syrnaxei/Folder-Alias/releases";
     HINSTANCE hRet = ShellExecuteA(
@@ -113,11 +134,15 @@ void openReleasePage() {
     }
 }
 
+bool containsEqual(const std::string& str) {
+    return str.find('=') != std::string::npos;
+}
+
 enum class Command {
     VERSION,
     LS,
     HELP,
-    UPDATE,
+    RELEASE,
     OPEN
 };
 
@@ -125,13 +150,13 @@ Command parseCommand(const std::string& cmd) {
     if (cmd == "version") return Command::VERSION;
     if (cmd == "ls") return Command::LS;
     if (cmd == "help") return  Command::HELP;
-    if (cmd == "update") return Command::UPDATE;
+    if (cmd == "release") return Command::RELEASE;
     return Command::OPEN;
 }
 
 int main(int argc,char* argv[]) {
     if (argc < 2) {
-        std::cout << "Type 'fa help' for a list of available commands." <<std::endl;
+        getHelp();
         return 1;
     }
 
@@ -151,55 +176,58 @@ int main(int argc,char* argv[]) {
             case Command::HELP:
                 getHelp();
                 break;
-            case Command::UPDATE:
+            case Command::RELEASE:
                 openReleasePage();
                 break;
-            case Command::OPEN: {
-                auto it = mappings.find(arg1);
-                if (it != mappings.end()) {
-                    HINSTANCE hRet = ShellExecuteA(
-                        nullptr,
-                        "explore",
-                        it->second.c_str(),
-                        nullptr,
-                        nullptr,
-                        SW_SHOWNORMAL
-                        );
-                    if ((INT_PTR)hRet <= 32) {
-                        std::cerr << "ERROR : Failed to open folder " << (int)(INT_PTR)hRet << std::endl;
-                    }else {
-                        std::cout << "Success." << std::endl;
-                    }
-                }else {
-                    std::cout << "Warning : Cannot find alias." << std::endl;
-                }
+            case Command::OPEN:
+                openFolder(mappings ,arg1);
                 break;
-            }
             default:
                 std::cout << "Warning : Command not found." << std::endl;
+                return 1;
         }
     }
 
     if (argc == 3) {
-        if (arg1 == "rm") {
+        if (arg1 == "del") {
             std::string alias = argv[2];
-            mappings.erase(alias);
-            saveMappings(dbFile,mappings);
-            std::cout << "Success." <<std::endl;
+            std::size_t eraseState = mappings.erase(alias);
+            if (eraseState == 1){
+                saveMappings(dbFile,mappings);
+                std::cout << "Success." <<std::endl;
+            }else {
+                std::cout << "Warning : Alias not found." << std::endl;
+                return 1;
+            }
         }else {
             std::cout << "Warning : Command not found." << std::endl;
+            return 1;
         }
     }
 
     if (argc == 4) {
         if (arg1 == "add") {
+            if (containsEqual(argv[2])) {
+                std::cout << "Warning : Alias cannot contain '='." << std::endl;
+                return 1;
+            }
+            if (containsEqual(argv[3])) {
+                std::cout << "Warning : Path cannot contain '='." << std::endl;
+                return 1;
+            }
             std::string alias = argv[2];
             mappings[alias] = argv[3];
             saveMappings(dbFile,mappings);
             std::cout << "Success." <<std::endl;
         }else {
             std::cout << "Warning : Command not found." << std::endl;
+            return 1;
         }
+    }
+
+    if (argc > 4) {
+        getHelp();
+        return 1;
     }
 
     return 0;
